@@ -4,7 +4,7 @@ import subprocess
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QCheckBox
+from PyQt5.QtWidgets import QCheckBox, QMessageBox
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QGridLayout
@@ -101,7 +101,7 @@ class CertConvert(QWidget):
         """
         Converts the certificate
 
-        :return:
+        :return: Boolean  
         """
         cert_ext = self.__convert_to_select.currentText()
         password = self.__password_field.text()
@@ -109,6 +109,18 @@ class CertConvert(QWidget):
         output_cert_file = re.sub(r'[a-z0-9.]*$', 'certificate' + cert_ext, self.__input_file_path)
 
         subprocess.call(Commands.extract_key(self.__input_file_path, output_key_file, password))
+
+        """
+        If there is no password provided but Strip password is checked, shows error message nad exits application 
+        on OK clicked
+        """
+        if self.__strip_password.isCheckable() and password.__len__() < 1:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("No password provided!")
+            msg.setWindowTitle("Error")
+            msg.buttonClicked.connect(self.__close_application)
+            msg.exec_()
 
         if self.__strip_password.isChecked():
             subprocess.call(Commands.remove_key_pass(output_key_file, password))
@@ -120,3 +132,7 @@ class CertConvert(QWidget):
         self.__layout.addWidget(QLabel(output_key_file), 5, 1)
 
         return True
+
+    @pyqtSlot()
+    def __close_application(self):
+        exit(1)
